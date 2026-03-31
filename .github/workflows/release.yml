@@ -60,9 +60,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           ARCHIVE="VideoScreenSaver-${VERSION}.zip"
-          cd build/Release
-          ditto -c -k --sequesterRsrc VideoScreenSaver.saver "../../$ARCHIVE"
-          cd ../..
+          ditto -c -k --sequesterRsrc --keepParent build/Release/VideoScreenSaver.saver "$ARCHIVE"
           SHA=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
