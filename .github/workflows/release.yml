@@ -52,7 +52,8 @@ jobs:
             -target VideoScreenSaver \
             -configuration Release \
             build \
-            SYMROOT=build
+            SYMROOT=build \
+            MACOSX_DEPLOYMENT_TARGET=14.0
 
       - name: Package
         id: package

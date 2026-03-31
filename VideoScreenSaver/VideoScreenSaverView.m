@@ -1,5 +1,6 @@
 #import "VideoScreenSaverView.h"
 @import AVFoundation;
+@import UniformTypeIdentifiers;
 
 static NSString *const kVideoPathKey = @"VideoPath";
 static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
