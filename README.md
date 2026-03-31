@@ -19,17 +19,38 @@ A macOS screensaver that plays a video file in a loop.
 
 ## Install
 
-1. Build the project in Xcode
-2. Copy `VideoScreenSaver.saver` to `~/Library/Screen Savers/`
-3. Open **System Settings > Screen Saver** and select **VideoScreenSaver**
-4. Click **Options** to choose a video file
+### Homebrew (recommended)
 
-## Build
+```sh
+brew tap GeneralD/tap
+brew install --cask video-screen-saver
+```
+
+### Manual
+
+1. Download the latest `.zip` from [Releases](https://github.com/GeneralD/VideoScreenSaver/releases)
+2. Unzip and copy `VideoScreenSaver.saver` to `~/Library/Screen Savers/`
+
+## Setup
+
+1. Open **System Settings > Screen Saver**
+2. Select **VideoScreenSaver**
+3. Click **Options** to choose a video file
+
+## Build from Source
 
 ```sh
 xcodebuild -project VideoScreenSaver.xcodeproj -target VideoScreenSaver -configuration Release build SYMROOT=build
 cp -R build/Release/VideoScreenSaver.saver ~/Library/Screen\ Savers/
 ```
+
+## Uninstall
+
+```sh
+brew uninstall --cask video-screen-saver
+```
+
+Or manually delete `~/Library/Screen Savers/VideoScreenSaver.saver`.
 
 ## License
 
