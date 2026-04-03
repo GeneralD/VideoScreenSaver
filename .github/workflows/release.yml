@@ -86,7 +86,6 @@ jobs:
           gh release upload "$TAG" "${{ steps.package.outputs.archive }}" --clobber 2>/dev/null || true
 
       - name: Update Homebrew cask
-        if: steps.tag_check.outputs.exists == 'false'
         uses: actions/github-script@v7
         env:
           HOMEBREW_PAT: ${{ secrets.HOMEBREW_PAT }}
