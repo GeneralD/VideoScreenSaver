@@ -9,7 +9,9 @@ static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
     AVPlayer *_player;
     AVPlayerLayer *_playerLayer;
     id _loopObserver;
+    id _visibilityObserver;
     NSWindow *_configWindow;
+    BOOL _isPreview;
 }
 
 #pragma mark - Initialization
@@ -17,7 +19,8 @@ static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
 - (instancetype)initWithFrame:(NSRect)frame isPreview:(BOOL)isPreview {
     self = [super initWithFrame:frame isPreview:isPreview];
     if (self) {
-        [self setAnimationTimeInterval:1.0 / 30.0];
+        _isPreview = isPreview;
+        [self setAnimationTimeInterval:DBL_MAX];
         [self setWantsLayer:YES];
     }
     return self;
@@ -31,13 +34,28 @@ static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
 }
 
 - (void)stopAnimation {
+    [self tearDownPlayer];
     [super stopAnimation];
+}
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (!self.window) {
+        [self tearDownPlayer];
+    }
+}
+
+- (void)dealloc {
     [self tearDownPlayer];
 }
 
 - (void)drawRect:(NSRect)rect {
     [[NSColor blackColor] setFill];
     NSRectFill(rect);
+}
+
+- (void)animateOneFrame {
+    // No-op: AVPlayerLayer renders via Core Animation.
 }
 
 #pragma mark - Preferences
@@ -63,9 +81,11 @@ static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
     if (![[NSFileManager defaultManager] fileExistsAtPath:path]) return;
 
     NSURL *url = [NSURL fileURLWithPath:path];
-    _player = [AVPlayer playerWithURL:url];
+    AVPlayerItem *item = [AVPlayerItem playerItemWithURL:url];
+    _player = [AVPlayer playerWithPlayerItem:item];
     _player.muted = YES;
     _player.volume = 0;
+    _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
 
     _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
     _playerLayer.frame = self.bounds;
@@ -76,25 +96,43 @@ static NSString *const kSuiteName = @"com.generald.VideoScreenSaver";
     __weak AVPlayer *weakPlayer = _player;
     _loopObserver = [[NSNotificationCenter defaultCenter]
         addObserverForName:AVPlayerItemDidPlayToEndTimeNotification
-        object:_player.currentItem
+        object:item
         queue:[NSOperationQueue mainQueue]
         usingBlock:^(NSNotification *note) {
-            [weakPlayer seekToTime:kCMTimeZero];
-            [weakPlayer play];
+            [weakPlayer seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {}];
         }];
 
     [_player play];
+
+    // Pause when the screensaver window becomes non-visible (e.g. occluded).
+    _visibilityObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSWindowDidChangeOcclusionStateNotification
+        object:self.window
+        queue:[NSOperationQueue mainQueue]
+        usingBlock:^(NSNotification *note) {
+            NSWindow *win = [note object];
+            if (win.occlusionState & NSWindowOcclusionStateVisible) {
+                [weakPlayer play];
+            } else {
+                [weakPlayer pause];
+            }
+        }];
 }
 
 - (void)tearDownPlayer {
-    [_player pause];
-    [_playerLayer removeFromSuperlayer];
     if (_loopObserver) {
         [[NSNotificationCenter defaultCenter] removeObserver:_loopObserver];
+        _loopObserver = nil;
     }
+    if (_visibilityObserver) {
+        [[NSNotificationCenter defaultCenter] removeObserver:_visibilityObserver];
+        _visibilityObserver = nil;
+    }
+    [_player pause];
+    [_player replaceCurrentItemWithPlayerItem:nil];
+    [_playerLayer removeFromSuperlayer];
     _player = nil;
     _playerLayer = nil;
-    _loopObserver = nil;
 }
 
 #pragma mark - Config Sheet
